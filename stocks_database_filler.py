@@ -45,7 +45,7 @@ class DataFetcher:
 
     def create_table(self, table_name, data_type):
         columns = {
-            "stock": '''id INTEGER PRIMARY KEY, date TEXT, month INTEGER, close REAL, adjusted_close REAL, price REAL''',
+            "stock": '''id INTEGER PRIMARY KEY, date TEXT, month INTEGER, close REAL, adjusted_close REAL''',
             "crypto": '''id INTEGER PRIMARY KEY, price REAL, month INTEGER, date TEXT''',
         }
         conn = sqlite3.connect(self.DB_FILE)
@@ -62,8 +62,6 @@ class DataFetcher:
         else:
             data = data[['4. close', '5. adjusted close']]
             data.columns = ['close', 'adjusted_close']
-            data = data.copy()  #avoid SettingWithCopyWarning
-            data.loc[:, 'price'] = data.loc[:, 'adjusted_close']
 
         return data
 
@@ -146,7 +144,7 @@ class DataFetcher:
                 if data_type == "crypto":
                     columns = 'price, month, date'
                 else:
-                    columns = 'close, adjusted_close, price, month, date'
+                    columns = 'close, adjusted_close, month, date'
 
                 #concise way of writing the SQL command via the join() method
                 values = ",".join(str(value) for value in data_row.values)
