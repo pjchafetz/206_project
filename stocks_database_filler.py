@@ -44,34 +44,28 @@ class DataFetcher:
 
 
     def create_table(self, table_name, data_type):
-
-        columns = {"stock": '''( id INTEGER PRIMARY KEY, open REAL, high REAL, low REAL, close REAL, adjusted_close REAL,
-                            volume INTEGER, dividend_amount REAL, month INTEGER, date TEXT)''',
-               "crypto": '''( id INTEGER PRIMARY KEY, price REAL, month INTEGER, date TEXT )''', }
+        columns = {
+            "stock": '''id INTEGER PRIMARY KEY, date TEXT, month INTEGER, close REAL, adjusted_close REAL, price REAL''',
+            "crypto": '''id INTEGER PRIMARY KEY, price REAL, month INTEGER, date TEXT''',
+        }
         conn = sqlite3.connect(self.DB_FILE)
         c = conn.cursor()
-        c.execute(f"CREATE TABLE IF NOT EXISTS {table_name} {columns[data_type]}")
+        c.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns[data_type]})")
         conn.commit()
         conn.close()
 
     def clean_data(self, data, data_type):
 
         if data_type == "crypto":
-            data = data[['price', 'date']]
-            data['month'] = pd.to_datetime(data['date']).dt.month
-            data = data.astype({'price': float, 'month': int})
-            return data
+            data = data[['price']]
+            data.columns = ['price']
         else:
-            #will change the column names by providing a mapping, may not the best way to do it but works 
-            columns = { "stock": {  "1. open": "open", "2. high": "high", "3. low": "low", "4. close": "close", "5. adjusted close": "adjusted_close",
-                                "6. volume": "volume", "7. dividend amount": "dividend_amount",},
-                    }
-            data = data.rename( columns = columns[data_type] )
-            data.index.name = "id"
-            data = data[ list( columns[data_type].values() ) ]
-            data = data.astype( float )
-            return data   
+            data = data[['4. close', '5. adjusted close']]
+            data.columns = ['close', 'adjusted_close']
+            data = data.copy()  #avoid SettingWithCopyWarning
+            data.loc[:, 'price'] = data.loc[:, 'adjusted_close']
 
+        return data
 
     def get_bitcoin_weekly_data_2021(self, start_date):
 
@@ -82,17 +76,19 @@ class DataFetcher:
         end_datetime = datetime.datetime.combine(end_date, datetime.time())
 
         data = self.cg.get_coin_market_chart_range_by_id( id = 'bitcoin', vs_currency = 'usd', from_timestamp = start_datetime.timestamp(), to_timestamp = end_datetime.timestamp(), resolution = 'daily')
-        
+    
         df = pd.DataFrame(data['prices'], columns=['timestamp', 'price'])
         df['date'] = pd.to_datetime(df['timestamp'], unit='ms').dt.date
 
-        weekly_df = df[ df['date'].dt.weekday == 0]  #fetch all 2021 Mondays 
+        df['date'] = pd.to_datetime(df['date'])
+        weekly_df = df[df['date'].dt.weekday == 0]  #fetch all 2021 Mondays 
+
         #skip over already collected data
         if start_date is not None:
-            weekly_df['date'] = pd.to_datetime(weekly_df['date']).dt.date
-            weekly_df = weekly_df[weekly_df['date'] >= start_date]
+            weekly_df = weekly_df[weekly_df['date'] >= pd.to_datetime(start_date)]
 
         weekly_df = weekly_df.iloc[:25]  #keep only the first 25 points
+        weekly_df.set_index('date', inplace=True)
         return weekly_df
 
     def fetch_and_clean_data(self, symbol, data_type, start_date, end_date):
@@ -142,16 +138,21 @@ class DataFetcher:
 
             cursor = conn.cursor()
 
-            for date in data.index:
+            for date_str in data.index:
+                data_row = data.loc[date_str]
+                date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
 
-                data_row = data.loc[date]
+                #column names based on the data_type
+                if data_type == "crypto":
+                    columns = 'price, month, date'
+                else:
+                    columns = 'close, adjusted_close, price, month, date'
+
                 #concise way of writing the SQL command via the join() method
-                values = ",".join( str(value) for value in data_row.values )
-                
-                month = pd.to_datetime(date).month
-                cursor.execute(f"INSERT OR IGNORE INTO {table_name} ({', '.join(data.columns)}, month, date) VALUES ({values}, {month}, '{date}')")
-        
-        conn.commit()
+                values = ",".join(str(value) for value in data_row.values)
+                month = date.month
+                cursor.execute(f"INSERT OR IGNORE INTO {table_name} ({columns}) VALUES ({values}, {month}, '{date_str}')")
+            conn.commit()
 
     def store_and_update(self, symbol, data_type, table_name):
 

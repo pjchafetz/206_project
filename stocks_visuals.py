@@ -60,7 +60,7 @@ def plot_average_prices(data):
 def main():
     #fetch data from the database
     sp500_data = execute_query("SELECT id, adjusted_close FROM sp500")
-    bitcoin_data = execute_query("SELECT id, close FROM bitcoin")
+    bitcoin_data = execute_query("SELECT id, price FROM bitcoin")
 
     #calculate ROI
     sp500_roi = calculate_roi([x[1] for x in sp500_data])
@@ -75,7 +75,7 @@ def main():
 
     #get the average price of S&P 500 and Bitcoin for each month
     join_query = '''
-    SELECT sp500.month, AVG(sp500.adjusted_close), AVG(bitcoin.close)
+    SELECT sp500.month, AVG(sp500.adjusted_close) as avg_adjusted_close, AVG(bitcoin.price) as avg_close
     FROM sp500
     JOIN bitcoin ON sp500.month = bitcoin.month
     GROUP BY sp500.month
