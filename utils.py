@@ -19,12 +19,15 @@ class Connection:
         self.cur.execute(query, inputs)
         return self.cur.fetchall()
 
-    def write(self, query: str, inputs: tuple) -> None:
-        self.cur.execute(query, inputs)
+    def write(self, query: str, inputs: tuple | None = None)  -> None:
+        if inputs is None:
+            self.cur.execute(query)
+        else:
+            self.cur.execute(query, inputs)
         self.conn.commit()
 
 
-def fetch_json(url: str, params: dict = None):
+def fetch_json(url: str, params: dict = None) -> dict:
     response = requests.get(url, params)
     if response.status_code != 200:
         raise Exception(f"Error: {response.status_code} - {response.reason}")

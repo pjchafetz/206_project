@@ -1,12 +1,11 @@
-#NEEDED: "pip install alpha_vantage pandas"
-#NEEDED: "pip install pycoingecko"
-
+import datetime
 import sqlite3
+import time
+
+import pandas as pd
 import requests
 from pycoingecko import CoinGeckoAPI
-import pandas as pd
-import datetime
-import time
+
 
 class DataFetcher:
 

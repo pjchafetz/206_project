@@ -1,4 +1,5 @@
 import sqlite3
+
 import matplotlib.pyplot as plt
 
 DB_FILE = "database.db"
