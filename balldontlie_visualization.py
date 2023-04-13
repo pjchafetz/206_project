@@ -1,13 +1,20 @@
 import matplotlib.pyplot as plt
 
-from utils import Connection, fetch_json
+from utils import Connection
+
+DB_FILE = "database.db"
 
 
-DB_NAME = "database.db"
+def calculate():
+    pass
+
+
+def plot():
+    pass
 
 
 def main():
-    conn = Connection(DB_NAME)
+    conn = Connection(DB_FILE)
 
 
 if __name__ == "__main__":

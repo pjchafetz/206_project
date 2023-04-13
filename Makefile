@@ -1,7 +1,6 @@
 database := database.db
 bdl_py := balldontlie.py
 bdl_vis := balldontlie_visualization.py
-bdl := balldontlie
 stocks_py := stocks_database_filler.py
 stocks_vis := stocks_visualization.py
 PYTHON := python3
@@ -31,7 +30,7 @@ stocks_vis:
 vis: bdl_vis stocks_vis
 
 clean:
-	@echo "Cleaning up..."
-	rm -f $(bdl) $(database)
+	@echo "Cleaning up database..."
+	rm -f $(database)
 
 .PHONY: clean
