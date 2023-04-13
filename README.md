@@ -15,15 +15,23 @@ Install the required packages:
 $ pip install -r requirements.txt
 ```
 
-Run the scripts:
+Either use the Makefile, or run the database scripts directly:
 ```bash
+$ make bdl
+$ make stocks
+$ make scripts # does both
+# OR
 $ python3 balldontlie.py
 $ python3 stocks_database_filler.py
 # repeat as desired
 ```
 
-Run the visualization scripts:
+Either use the Makefile, or run the visualization scripts directly:
 ```bash
+$ make bdl_vis
+$ make stocks_vis
+$ make vis # does both
+# OR
 $ python3 balldontlie_visualization.py
 $ python3 stocks_visuals.py
 ```
