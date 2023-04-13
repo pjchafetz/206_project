@@ -26,16 +26,16 @@ class DataFetcher:
         sp500_data_points_count = self.get_data_points_count("sp500")
         bitcoin_data_points_count = self.get_data_points_count("bitcoin")
 
-        #below ensures we fetch exactly 25 at a time for a total of 100 datapoints
+        #below ensures we fetch exactly 25 at a time for a total of 200 datapoints
 
-        #fetch 25 sp500 datapoints if we do not already have 50 sp500 data points, else fetch none
-        if sp500_data_points_count < 50:
+        #fetch 25 sp500 datapoints if we do not already have 100 sp500 data points, else fetch none
+        if sp500_data_points_count < 100:
             sp500_data_points, sp500_start, sp500_end = self.store_and_update(self.sp500_symbol, "stock", "sp500")
         else:
             sp500_data_points, sp500_start, sp500_end = sp500_data_points_count, None, None
 
-        #fetch 25 bitcoin datapoints if we already have 50 sp500 data points and we do not already have 50 bitcoin datapoints, else fetch none
-        if bitcoin_data_points_count < 50 and sp500_data_points_count >= 50:
+        #fetch 25 bitcoin datapoints if we already have 1000 sp500 data points and we do not already have 100 bitcoin datapoints, else fetch none
+        if bitcoin_data_points_count < 100 and sp500_data_points_count >= 100:
             bitcoin_data_points, bitcoin_start, bitcoin_end = self.store_and_update("BTC", "crypto", "bitcoin")
         else:
             bitcoin_data_points, bitcoin_start, bitcoin_end = bitcoin_data_points_count, None, None
@@ -65,9 +65,9 @@ class DataFetcher:
 
         return data
 
-    def get_bitcoin_weekly_data_2021(self, start_date):
+    def get_bitcoin_weekly_data(self, start_date):
 
-        start_date = datetime.date(2021, 1, 1) if start_date is None else start_date
+        start_date = datetime.date(2020, 1, 1) if start_date is None else start_date
         end_date = datetime.date(2021, 12, 31)
 
         start_datetime = datetime.datetime.combine(start_date, datetime.time())
@@ -79,7 +79,7 @@ class DataFetcher:
         df['date'] = pd.to_datetime(df['timestamp'], unit='ms').dt.date
 
         df['date'] = pd.to_datetime(df['date'])
-        weekly_df = df[df['date'].dt.weekday == 0]  #fetch all 2021 Mondays 
+        weekly_df = df[df['date'].dt.weekday == 0]  #fetch all Mondays in this year (2020 or 2021)
 
         #skip over already collected data
         if start_date is not None:
@@ -93,10 +93,9 @@ class DataFetcher:
 
 
         if data_type == "crypto" and symbol == "BTC":
-            data = self.get_bitcoin_weekly_data_2021(start_date = start_date)
+            data = self.get_bitcoin_weekly_data(start_date = start_date)
             return self.clean_data(data, data_type)
         else:
-
             function = "TIME_SERIES_WEEKLY_ADJUSTED"
             key = "Weekly Adjusted Time Series"
             url = f"https://www.alphavantage.co/query?function={function}&symbol={symbol}&apikey={self.API_KEY}"
@@ -155,7 +154,6 @@ class DataFetcher:
     def store_and_update(self, symbol, data_type, table_name):
 
         latest_date = self.get_latest_date(table_name)
-
         if latest_date is not None:
             #when the database is NOT empty, start at the most recent date (i.e. latest_date)
             latest_date = datetime.datetime.strptime(latest_date, "%Y-%m-%d").date()
@@ -163,8 +161,8 @@ class DataFetcher:
             end_date = start_date + datetime.timedelta(days=365)
 
         else:
-            #when the database is EMPTY, start at the beginning of 2021
-            start_date = datetime.date(2021, 1, 1)
+            #when the database is EMPTY, start at the beginning of 2020
+            start_date = datetime.date(2020, 1, 1)
             end_date = datetime.date(2021, 12, 31)
 
         data = self.fetch_and_clean_data_with_retry(symbol, data_type, start_date, end_date)
@@ -197,10 +195,10 @@ class DataFetcher:
 
     def print_summary(self, sp500_data_points, bitcoin_data_points, sp500_start, sp500_end, bitcoin_start, bitcoin_end):
 
-        print(f"Total data points for S&P 500: {sp500_data_points}")
-        print(f"Total data points for Bitcoin: {bitcoin_data_points}")
+        print(f"Total data points for S&P 500 API: {sp500_data_points}")
+        print(f"Total data points for Bitcoin API: {bitcoin_data_points}")
 
-        remaining_data_points = 100 - ( sp500_data_points + bitcoin_data_points )
+        remaining_data_points = 200 - ( sp500_data_points + bitcoin_data_points )
         print(f"Data saved for S&P 500 from {sp500_start} to {sp500_end}")
         print(f"Data saved for Bitcoin from {bitcoin_start} to {bitcoin_end}")
 

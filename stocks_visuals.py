@@ -32,7 +32,7 @@ def plot_roi(sp500_roi, bitcoin_roi):
     plt.plot(bitcoin_roi, label="Bitcoin")
     plt.xlabel("Week")
     plt.ylabel("ROI")
-    plt.title("Weekly ROI in 2021")
+    plt.title("Weekly ROI in 2020 and 2021")
     plt.legend()
     plt.show()
 
@@ -53,7 +53,7 @@ def plot_average_prices(data):
     ax1.tick_params(axis='y', colors='blue')
     ax2.tick_params(axis='y', colors='orange')
     
-    plt.title('Average Price per Month in 2021')
+    plt.title('Average Price per Month in 2020 and 2021 combined')
     plt.show()
 
 
@@ -70,7 +70,7 @@ def main():
     output_to_file(sp500_roi, 'sp500_roi.txt')
     output_to_file(bitcoin_roi, 'bitcoin_roi.txt')
 
-    #plot ROI for each week in 2021
+    #plot ROI for each week in 2020 and 2021
     plot_roi(sp500_roi, bitcoin_roi)
 
     #get the average price of S&P 500 and Bitcoin for each month
