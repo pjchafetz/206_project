@@ -1,5 +1,5 @@
 import sys
-
+import json
 from utils import Connection, fetch_json
 
 DB_NAME = "database.db"
@@ -16,16 +16,24 @@ def create_tables(conn: Connection):
     conn.write("""CREATE TABLE IF NOT EXISTS Game (id INTEGER PRIMARY KEY, date TEXT, season INTEGER, home_team_id INTEGER, home_team_score INTEGER, visitor_team_id INTEGER, visitor_team_score INTEGER)""")
 
 
-def get_and_update_page() -> int:
+def get_and_update_page(player_id: str, per_page: int) -> int:
     FILENAME = "balldontlie"
     try:
         with open(FILENAME, "r") as f:
-            page = int(f.read())
-    except:
-        page = 1
+            data = json.load(f)
+            page = data[player_id]
+    except FileNotFoundError:
+        data = {}
+        stats = fetch_json(STATS_URL, {"player_ids[]": player_id, "per_page": per_page})
+        page = stats["meta"]["total_pages"] // 2
+    except KeyError:
+        stats = fetch_json(STATS_URL, {"player_ids[]": player_id, "per_page": per_page})
+        page = stats["meta"]["total_pages"] // 2
+        
     try:
         with open("balldontlie", "w") as f:
-            f.write(str(page + 1))
+            data[player_id] = data.get(player_id, page) + 1
+            json.dump(data, f)
     except:
         raise Exception(f"Error writing to file {FILENAME} with page {page}")
     return page
@@ -56,8 +64,9 @@ def store_game(conn: Connection, game: dict):
                (game["id"], game["date"], game["season"], game["home_team_id"], game["home_team_score"], game["visitor_team_id"], game["visitor_team_score"]))
 
 
-def store_all_stats_for_player(conn: Connection, page: int, per_page: int, player_id: int) -> int:
+def store_all_stats_for_player(conn: Connection, per_page: int, player_id: int) -> int:
     count = 0
+    page = get_and_update_page(str(player_id), per_page)
     stats = fetch_json(STATS_URL, {"page": page, "per_page": per_page, "player_ids[]": player_id})
     if stats["data"] == []:
         print(f"No stats found for player {player_id} on page {page}", file=sys.stderr)
@@ -77,7 +86,6 @@ def store_all_stats_for_player(conn: Connection, page: int, per_page: int, playe
 def main():
     conn = Connection(DB_NAME)
     START_DATE = "2000-01-01"
-    PAGE = get_and_update_page()
     PLAYERS = [
         "LeBron James",     # id 237    TODO: remove me
         "Michael Jordan",   # id 2931   TODO: remove me
@@ -89,7 +97,7 @@ def main():
 
     # use a specific (list of) season(s) - probably a bad idea
     total_stored = sum(
-        store_all_stats_for_player(conn, PAGE, int(NUM_ENTRIES / len(PLAYERS)), id)
+        store_all_stats_for_player(conn, int(NUM_ENTRIES / len(PLAYERS)), id)
         for id in ids
     )
     print(f"Stored {total_stored} entries into {DB_NAME}")

@@ -32,6 +32,6 @@ vis: bdl_vis stocks_vis
 
 clean:
 	@echo "Cleaning up..."
-	rm $(bdl) $(database)
+	rm -f $(bdl) $(database)
 
 .PHONY: clean
