@@ -1,12 +1,14 @@
 import sys
 
-from utils import Connection, fetch_json
+from utils import DB_FILE, Connection, fetch_json
 
-DB_FILE = "database.db"
+import json
+
 NUM_ENTRIES = 25
 BASE_URL = "https://www.balldontlie.io/api/v1"
 PLAYERS_URL = f"{BASE_URL}/players"
 STATS_URL = f"{BASE_URL}/stats"
+CALC_FILE = "bdl_data.json"
 
 
 def create_tables(conn: Connection):
@@ -17,13 +19,16 @@ def create_tables(conn: Connection):
 
 
 def get_and_update_page(conn: Connection, player_id: int, per_page: int) -> int:
-    page = conn.read("SELECT page FROM Player WHERE id = ?", (player_id,))[0][0]
+    page = conn.read("SELECT page FROM Player WHERE id = ?",
+                     (player_id,))[0][0]
     if page:
-        conn.write("UPDATE Player SET page = ? WHERE id = ?", (page + 1, player_id))
+        conn.write("UPDATE Player SET page = ? WHERE id = ?",
+                   (page + 1, player_id))
         return page
     stats = fetch_json(STATS_URL, {"player_ids[]": player_id, "per_page": per_page})
     page = stats["meta"]["total_pages"] // 2
-    conn.write("UPDATE Player SET page = ? WHERE id = ?", (page + 1, player_id))
+    conn.write("UPDATE Player SET page = ? WHERE id = ?",
+               (page + 1, player_id))
     return page
 
 
@@ -71,6 +76,53 @@ def store_all_stats_for_player(conn: Connection, per_page: int, player_id: int) 
     return count
 
 
+def calculate_avg_pcts(conn: Connection) -> list[tuple]:
+    data = conn.read(
+        """
+        SELECT Player.first_name || " " || Player.last_name, AVG(Stat.ft_pct), AVG(Stat.fg_pct), AVG(Stat.fg3_pct) FROM Stat
+        JOIN Player ON Stat.player_id = Player.id
+        GROUP BY Player.id
+        """
+    )
+    return data
+
+
+def write_averages(stats: list[tuple]):
+    d = {"players": {name: {}} for name in set([stat[0] for stat in stats])}
+    for stat in stats:
+        name, ft_pct, fg_pct, fg3_pct = stat
+        ft_pct, fg_pct, fg3_pct = round(ft_pct * 100, 2), round(fg_pct * 100, 2), round(fg3_pct * 100, 2)
+        d["players"][name] = {"ave": {"ft_pct": ft_pct, "fg_pct": fg_pct, "fg3_pct": fg3_pct}}
+
+    with open(CALC_FILE, "w") as f:
+        json.dump(d, f)
+
+
+def calculate_games_played(conn: Connection) -> list[tuple]:
+    data = conn.read(
+        """
+        SELECT Player.first_name || " " || Player.last_name, COUNT(Game.id) FROM Stat
+        JOIN Player ON Stat.player_id = Player.id
+        JOIN Game ON Stat.game_id = Game.id
+        GROUP BY Player.id
+        """
+    )
+    return data
+
+
+def write_games_played(stats: list[tuple]):
+    with open(CALC_FILE, "r") as f:
+        json_data = json.load(f)
+
+    json_data["meta"] = json_data.get("meta", {}) | {"total_games": sum([stat[1] for stat in stats])}
+    for stat in stats:
+        name, games_played = stat
+        json_data["players"][name]["games_played"] = games_played
+
+    with open(CALC_FILE, "w") as f:
+        json.dump(json_data, f)
+
+
 def main():
     conn = Connection(DB_FILE)
     PLAYERS = [
@@ -80,15 +132,26 @@ def main():
     ]
 
     create_tables(conn)
+
     ids = [get_and_store_player_by_name(conn, player) for player in PLAYERS]
+
     total_stored_this_run = sum(
-        store_all_stats_for_player(conn, NUM_ENTRIES // len(PLAYERS), id)
-        for id in ids
+       store_all_stats_for_player(conn, NUM_ENTRIES // len(PLAYERS), id)
+       for id in ids
     )
+
     total_count = conn.read("SELECT COUNT(*) FROM Stat")[0][0]
 
     print(f"Stored {total_stored_this_run} entries into {DB_FILE}")
     print(f"Total entries in {DB_FILE}: {total_count}/100")
+
+    averages = calculate_avg_pcts(conn)
+    write_averages(averages)
+
+    games_played = calculate_games_played(conn)
+    write_games_played(games_played)
+
+    print(f"Wrote calculated data to {CALC_FILE} cache file")
 
 
 if __name__ == "__main__":

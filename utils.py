@@ -2,6 +2,7 @@ import sqlite3
 
 import requests
 
+DB_FILE = "database.db"
 
 class Connection:
     def __init__(self, filename: str) -> None:
