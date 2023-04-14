@@ -1,12 +1,4 @@
-UNAME := $(shell uname)
-
-ifeq ($(UNAME), Linux)
-PYTHON := python3
-endif
-ifeq ($(UNAME), Darwin)
 PYTHON := python
-endif
-
 database := database.db
 bdl_py := balldontlie.py
 stocks_py := stocks.py
