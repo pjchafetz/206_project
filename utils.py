@@ -16,14 +16,14 @@ class Connection:
     def __str__(self) -> None:
         return f"Database connection to {self._filename}"
 
-    def read(self, query: str, inputs: tuple | None = None) -> list:
+    def read(self, query: str, inputs: tuple = None) -> list:
         if inputs is None:
             self.cur.execute(query)
         else:
             self.cur.execute(query, inputs)
         return self.cur.fetchall()
 
-    def write(self, query: str, inputs: tuple | None = None)  -> None:
+    def write(self, query: str, inputs: tuple = None)  -> None:
         if inputs is None:
             self.cur.execute(query)
         else:

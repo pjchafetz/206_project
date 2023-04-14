@@ -2,7 +2,7 @@ database := database.db
 bdl_py := balldontlie.py
 bdl_vis := balldontlie_visualization.py
 stocks_py := stocks_database_filler.py
-stocks_vis := stocks_visualization.py
+stocks_vis := stocks_visuals.py
 PYTHON := python3
 
 default: clean
