@@ -6,10 +6,11 @@ import pandas as pd
 import requests
 from pycoingecko import CoinGeckoAPI
 
+from utils import DB_FILE
+
 
 class DataFetcher:
 
-    DB_FILE = "database.db"
     API_KEY = "KSQ8WYQPVF6ZXZ5G" #for alpha_vantage stocks
     cg = CoinGeckoAPI()
 
@@ -48,7 +49,7 @@ class DataFetcher:
             "stock": '''id INTEGER PRIMARY KEY, date TEXT, month INTEGER, close REAL, adjusted_close REAL''',
             "crypto": '''id INTEGER PRIMARY KEY, price REAL, month INTEGER, date TEXT''',
         }
-        conn = sqlite3.connect(self.DB_FILE)
+        conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns[data_type]})")
         conn.commit()
@@ -131,7 +132,7 @@ class DataFetcher:
     def store_data(self, data, table_name, data_type):
 
         data.index = data.index.astype(str)
-        with sqlite3.connect(self.DB_FILE) as conn:
+        with sqlite3.connect(DB_FILE) as conn:
 
             cursor = conn.cursor()
 
@@ -177,7 +178,7 @@ class DataFetcher:
 
     def get_latest_date(self, table_name):
 
-        conn = sqlite3.connect(self.DB_FILE)
+        conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute(f"SELECT MAX(date) FROM {table_name}")
         latest_date = c.fetchone()[0]
@@ -186,7 +187,7 @@ class DataFetcher:
 
     def get_data_points_count(self, table_name):
 
-        conn = sqlite3.connect(self.DB_FILE)
+        conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute(f"SELECT COUNT(*) FROM {table_name}")
         total_data_points = c.fetchone()[0]

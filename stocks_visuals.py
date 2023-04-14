@@ -2,7 +2,7 @@ import sqlite3
 
 import matplotlib.pyplot as plt
 
-DB_FILE = "database.db"
+from utils import DB_FILE
 
 def execute_query(query):
     conn = sqlite3.connect(DB_FILE)
