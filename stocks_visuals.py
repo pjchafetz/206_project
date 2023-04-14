@@ -17,13 +17,15 @@ def calculate_roi(prices):
     roi = [(prices[i + 1] - prices[i]) / prices[i] for i in range(len(prices) - 1)]
     return roi
 
-def output_to_file(data, file_name):
-    with open(file_name, 'w') as f:
+def output_to_file(data, asset_name, file_name):
+    with open(file_name, 'a') as f:
+        f.write(f"{asset_name} Return on Investment per week of 2020 and 2021:\n")
         for i, item in enumerate(data, start=1):
             f.write(f"Week {i}: {item}\n")
 
 def output_average_prices_to_file(data, file_name):
-    with open(file_name, 'w') as f:
+    with open(file_name, 'a') as f:
+        f.write("\nAverage Prices of 2020 and 2021:\n")
         for month, sp500_avg, bitcoin_avg in data:
             f.write(f"Month {month}: S&P 500 Avg: {sp500_avg}, Bitcoin Avg: {bitcoin_avg}\n")
 
@@ -67,8 +69,8 @@ def main():
     bitcoin_roi = calculate_roi([x[1] for x in bitcoin_data])
 
     #output data to files
-    output_to_file(sp500_roi, 'sp500_roi.txt')
-    output_to_file(bitcoin_roi, 'bitcoin_roi.txt')
+    output_to_file(sp500_roi, 'S&P 500', 'stock_calculations.txt')
+    output_to_file(bitcoin_roi, 'Bitcoin', 'stock_calculations.txt')
 
     #plot ROI for each week in 2020 and 2021
     plot_roi(sp500_roi, bitcoin_roi)
@@ -83,7 +85,7 @@ def main():
     '''
     joined_data = execute_query(join_query)
 
-    output_average_prices_to_file(joined_data, 'average_prices.txt')
+    output_average_prices_to_file(joined_data, 'stock_calculations.txt')
     plot_average_prices(joined_data)
 
 if __name__ == "__main__":
