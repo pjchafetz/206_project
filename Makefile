@@ -1,36 +1,69 @@
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), Linux)
+PYTHON := python3
+endif
+ifeq ($(UNAME), Darwin)
+PYTHON := python
+endif
+
 database := database.db
 bdl_py := balldontlie.py
+stocks_py := stocks.py
 bdl_vis := balldontlie_visualization.py
-stocks_py := stocks_database_filler.py
-stocks_vis := stocks_visuals.py
-PYTHON := python3
+stocks_vis := stocks_visualization.py
+
 
 default: clean
 
-all: scripts vis
 
-bdl:
+prepare: clean prepare_balldontlie prepare_stocks
+	@echo "Done! $(database) should be ready."
+
+
+prepare_balldontlie:
+	@echo "Collecting 100 items from Ball Don't Lie..."
+	@$(PYTHON) $(bdl_py)
+	@$(PYTHON) $(bdl_py)
+	@$(PYTHON) $(bdl_py)
+	@$(PYTHON) $(bdl_py)
+	@$(PYTHON) $(bdl_py)
+
+
+prepare_stocks:
+	@echo "Collecting 100 items from Stocks..."
+	@$(PYTHON) $(stocks_py)
+	@$(PYTHON) $(stocks_py)
+	@$(PYTHON) $(stocks_py)
+	@$(PYTHON) $(stocks_py)
+	@$(PYTHON) $(stocks_py)
+	@$(PYTHON) $(stocks_py)
+	@$(PYTHON) $(stocks_py)
+	@$(PYTHON) $(stocks_py)
+
+
+balldontlie:
 	@echo "Running Ball Don't Lie"
 	@$(PYTHON) $(bdl_py)
+
+
+balldontlie_vis:
+	@echo "Running Ball Don't Lie Visualization"
+	@$(PYTHON) $(bdl_vis)
+
 
 stocks:
 	@echo "Running Stocks"
 	@$(PYTHON) $(stocks_py)
 
-scripts: bdl stocks
-
-bdl_vis:
-	@echo "Running Ball Don't Lie Visualization"
-	@$(PYTHON) $(bdl_vis)
 
 stocks_vis:
 	@echo "Running Stocks Visualization"
 	@$(PYTHON) $(stocks_vis)
 
-vis: bdl_vis stocks_vis
-
 clean:
 	@echo "Cleaning up database..."
 	rm -f $(database)
 
-.PHONY: clean
+
+.PHONY: clean bdl bdl_vis stocks stocks_vis

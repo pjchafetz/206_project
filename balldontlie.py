@@ -1,14 +1,13 @@
+import json
 import sys
 
 from utils import DB_FILE, Connection, fetch_json
-
-import json
 
 NUM_ENTRIES = 25
 BASE_URL = "https://www.balldontlie.io/api/v1"
 PLAYERS_URL = f"{BASE_URL}/players"
 STATS_URL = f"{BASE_URL}/stats"
-CALC_FILE = "bdl_data.json"
+CALC_FILE = "balldontlie_data.json"
 
 
 def create_tables(conn: Connection):
@@ -35,7 +34,7 @@ def get_and_update_page(conn: Connection, player_id: int, per_page: int) -> int:
 def get_and_store_player_by_name(conn: Connection, name: str) -> int:
     player = fetch_json(PLAYERS_URL, {"search": name})
     if player["data"] == []:
-        raise Exception("Player not found")
+        raise RuntimeError("Player not found")
     player = player["data"][0]
     conn.write("""INSERT OR IGNORE INTO Player (id, first_name, last_name, team_id) VALUES (?, ?, ?, ?)""",
                (player["id"], player["first_name"], player["last_name"], player["team"]["id"]))
@@ -88,14 +87,14 @@ def calculate_avg_pcts(conn: Connection) -> list[tuple]:
 
 
 def write_averages(stats: list[tuple]):
-    d = {"players": {name: {}} for name in set([stat[0] for stat in stats])}
+    ave_dict = {"players": {name: {}} for name in {stat[0] for stat in stats}}
     for stat in stats:
         name, ft_pct, fg_pct, fg3_pct = stat
         ft_pct, fg_pct, fg3_pct = round(ft_pct * 100, 2), round(fg_pct * 100, 2), round(fg3_pct * 100, 2)
-        d["players"][name] = {"ave": {"ft_pct": ft_pct, "fg_pct": fg_pct, "fg3_pct": fg3_pct}}
+        ave_dict["players"][name] = {"ave": {"ft_pct": ft_pct, "fg_pct": fg_pct, "fg3_pct": fg3_pct}}
 
-    with open(CALC_FILE, "w") as f:
-        json.dump(d, f)
+    with open(CALC_FILE, "w", encoding='utf-8') as file:
+        json.dump(ave_dict, file)
 
 
 def calculate_games_played(conn: Connection) -> list[tuple]:
@@ -111,21 +110,21 @@ def calculate_games_played(conn: Connection) -> list[tuple]:
 
 
 def write_games_played(stats: list[tuple]):
-    with open(CALC_FILE, "r") as f:
-        json_data = json.load(f)
+    with open(CALC_FILE, "r", encoding='utf-8') as file:
+        json_data = json.load(file)
 
-    json_data["meta"] = json_data.get("meta", {}) | {"total_games": sum([stat[1] for stat in stats])}
+    json_data["meta"] = json_data.get("meta", {}) | {"total_games": sum(stat[1] for stat in stats)}
     for stat in stats:
         name, games_played = stat
         json_data["players"][name]["games_played"] = games_played
 
-    with open(CALC_FILE, "w") as f:
-        json.dump(json_data, f)
+    with open(CALC_FILE, "w", encoding='utf-8') as file:
+        json.dump(json_data, file)
 
 
 def main():
     conn = Connection(DB_FILE)
-    PLAYERS = [
+    players = [
         "LeBron James",
         "Michael Jordan",
         "Kobe Bryant",
@@ -133,10 +132,10 @@ def main():
 
     create_tables(conn)
 
-    ids = [get_and_store_player_by_name(conn, player) for player in PLAYERS]
+    ids = [get_and_store_player_by_name(conn, player) for player in players]
 
     total_stored_this_run = sum(
-       store_all_stats_for_player(conn, NUM_ENTRIES // len(PLAYERS), id)
+       store_all_stats_for_player(conn, NUM_ENTRIES // len(players), id)
        for id in ids
     )
 
