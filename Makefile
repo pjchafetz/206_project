@@ -4,7 +4,7 @@ bdl_py := balldontlie.py
 stocks_py := stocks.py
 bdl_vis := balldontlie_visualization.py
 stocks_vis := stocks_visualization.py
-
+calc_files := balldontlie_data.json stocks_data.txt
 
 default: clean
 
@@ -55,7 +55,7 @@ stocks_vis:
 
 clean:
 	@echo "Cleaning up database..."
-	rm -f $(database)
+	rm -f $(database) $(calc_files)
 
 
 .PHONY: clean bdl bdl_vis stocks stocks_vis
