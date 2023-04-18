@@ -17,7 +17,6 @@ class DataFetcher:
         self.sp500_symbol = sp500_symbol
         self.bitcoin_symbol = bitcoin_symbol
 
-
     def main(self):
         self.create_table("sp500", "stock")
         self.create_table("bitcoin", "crypto")
@@ -44,7 +43,6 @@ class DataFetcher:
         self.print_summary(sp500_data_points, bitcoin_data_points,
                            sp500_start, sp500_end, bitcoin_start, bitcoin_end)
 
-
     def create_table(self, table_name, data_type):
         columns = {
             "stock": '''id INTEGER PRIMARY KEY, date TEXT, month INTEGER, close REAL, adjusted_close REAL''',
@@ -57,7 +55,6 @@ class DataFetcher:
         conn.commit()
         conn.close()
 
-
     def clean_data(self, data, data_type):
         if data_type == "crypto":
             data = data[['price']]
@@ -68,7 +65,6 @@ class DataFetcher:
 
         return data
 
-
     def get_bitcoin_weekly_data(self, start_date):
         start_date = datetime.date(
             2020, 1, 1) if start_date is None else start_date
@@ -77,8 +73,8 @@ class DataFetcher:
         start_datetime = datetime.datetime.combine(start_date, datetime.time())
         end_datetime = datetime.datetime.combine(end_date, datetime.time())
 
-        data = self.cg.get_coin_market_chart_range_by_id(id='bitcoin', vs_currency='usd', from_timestamp=start_datetime.timestamp(
-        ), to_timestamp=end_datetime.timestamp(), resolution='daily')
+        data = self.cg.get_coin_market_chart_range_by_id(id='bitcoin', vs_currency='usd', from_timestamp=start_datetime.timestamp(),
+                                                         to_timestamp=end_datetime.timestamp(), resolution='daily')
 
         dataframe = pd.DataFrame(data['prices'], columns=['timestamp', 'price'])
         dataframe['date'] = pd.to_datetime(dataframe['timestamp'], unit='ms').dt.date
@@ -89,13 +85,11 @@ class DataFetcher:
 
         # skip over already collected data
         if start_date is not None:
-            weekly_df = weekly_df[weekly_df['date']
-                                  >= pd.to_datetime(start_date)]
+            weekly_df = weekly_df[weekly_df['date'] >= pd.to_datetime(start_date)]
 
         weekly_df = weekly_df.iloc[:25]  # keep only the first 25 points
         weekly_df.set_index('date', inplace=True)
         return weekly_df
-
 
     def fetch_and_clean_data(self, symbol, data_type, start_date, end_date):
         if data_type == "crypto" and symbol == "BTC":
@@ -107,14 +101,12 @@ class DataFetcher:
         response = requests.get(url, timeout=5)
         json_data = response.json()
         if "Error Message" in json_data:
-            raise ValueError(
-                f"Error fetching data for {symbol}: {json_data['Error Message']}")
+            raise ValueError(f"Error fetching data for {symbol}: {json_data['Error Message']}")
         data = pd.DataFrame(json_data[key]).T
         data.index = pd.to_datetime(data.index)
         data = data.sort_index()
         data = data.loc[start_date:end_date]
         return self.clean_data(data, data_type)
-
 
     def fetch_and_clean_data_with_retry(self, symbol, data_type, start_date, end_date):
         retries, max_retries = 0, 3
@@ -131,7 +123,6 @@ class DataFetcher:
 
         raise ValueError(
             f"Failed to fetch data for {symbol} after {max_retries} attempts.")
-
 
     def store_data(self, data, table_name, data_type):
         data.index = data.index.astype(str)
@@ -155,7 +146,6 @@ class DataFetcher:
                 cursor.execute(
                     f"INSERT OR IGNORE INTO {table_name} ({columns}) VALUES ({values}, {month}, '{date_str}')")
             conn.commit()
-
 
     def store_and_update(self, symbol, data_type, table_name):
         latest_date = self.get_latest_date(table_name)
@@ -183,7 +173,6 @@ class DataFetcher:
         # end_date
         return total_data_points, start_date, filtered_data.index[-1]
 
-
     def get_latest_date(self, table_name):
         conn = sqlite3.connect(DB_FILE)
         cur = conn.cursor()
@@ -192,7 +181,6 @@ class DataFetcher:
         conn.close()
         return str(latest_date) if latest_date else None
 
-
     def get_data_points_count(self, table_name):
         conn = sqlite3.connect(DB_FILE)
         cur = conn.cursor()
@@ -200,7 +188,6 @@ class DataFetcher:
         total_data_points = cur.fetchone()[0]
         conn.close()
         return total_data_points
-
 
     def print_summary(self, sp500_data_points, bitcoin_data_points, sp500_start, sp500_end, bitcoin_start, bitcoin_end):
         print(f"Total data points for S&P 500 API: {sp500_data_points}")
